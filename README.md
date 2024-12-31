@@ -143,12 +143,6 @@ Based on the AWS Pricing Calculator, the estimated monthly cost for this solutio
 4. **Data Transfer Costs**:
    - **Cost:** $0.10 per month (0.6% of total costs)
    - **Reason:** 5 GB inbound and 5 GB outbound data transfer.
-
-### Observations:
-- **Rekognition Image API** is the primary cost driver. Consider reducing API calls or batching images if cost optimization is required.
-- **DynamoDB Costs** are negligible, as expected for small-scale metadata storage.
-- Overall, this solution is cost-efficient for small to medium workloads.
-
 ---
 
 ## Next Steps (required)
