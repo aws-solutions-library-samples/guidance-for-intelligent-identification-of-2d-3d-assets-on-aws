@@ -1,30 +1,19 @@
-# Guidance Title (required)
+# Guidance for AIML-powered 2D/3D Asset Identification and Management
 
-The Guidance title should be consistent with the title established first in Alchemy.
-
-**Example:** *Guidance for Product Substitutions on AWS*
-
-This title correlates exactly to the Guidance it’s linked to, including its corresponding sample code repository. 
-
-
-## Table of Contents (required)
-
-List the top-level sections of the README template, along with a hyperlink to the specific section.
+## Table of Contents
 
 ### Required
-
 1. [Overview](#overview-required)
-    - [Cost](#cost)
+   - [Cost](#cost)
 2. [Prerequisites](#prerequisites-required)
-    - [Operating System](#operating-system-required)
+   - [Operating System](#operating-system-required)
 3. [Deployment Steps](#deployment-steps-required)
 4. [Deployment Validation](#deployment-validation-required)
 5. [Running the Guidance](#running-the-guidance-required)
 6. [Next Steps](#next-steps-required)
 7. [Cleanup](#cleanup-required)
 
-***Optional***
-
+### Optional
 8. [FAQ, known issues, additional considerations, and limitations](#faq-known-issues-additional-considerations-and-limitations-optional)
 9. [Revisions](#revisions-optional)
 10. [Notices](#notices-optional)
@@ -32,184 +21,173 @@ List the top-level sections of the README template, along with a hyperlink to th
 
 ## Overview (required)
 
-1. Provide a brief overview explaining the what, why, or how of your Guidance. You can answer any one of the following to help you write this:
+This solution provides an automated pipeline for asset identification and management, designed specifically for game studios and traditional media industries. By leveraging AWS services, this solution allows users to process, store, and analyze both 2D and 3D assets efficiently and securely. While tailored to game studios, the solution's flexibility makes it applicable to other industries requiring robust asset management workflows.
 
-    - **Why did you build this Guidance?**
-    - **What problem does this Guidance solve?**
+### Key Features:
+- Automated handling of asset ingestion, analysis, and metadata extraction.
+- Integration with AWS services like S3, Lambda, and DynamoDB to provide a scalable and reliable architecture.
+- Designed to support both 2D and 3D assets, making it versatile for different types of media.
+- Fully automated workflow after deployment, requiring no additional manual intervention.
 
-2. Include the architecture diagram image, as well as the steps explaining the high-level overview and flow of the architecture. 
-    - To add a screenshot, create an ‘assets/images’ folder in your repository and upload your screenshot to it. Then, using the relative file path, add it to your README. 
+### Architecture Overview:
+The solution leverages AWS’s serverless capabilities to create a highly scalable, cost-effective pipeline. Major components include:
+- **Amazon S3**: For asset storage and logging.
+- **AWS Lambda**: For processing assets and invoking analysis tasks.
+- **Amazon DynamoDB**: For storing asset metadata.
+- **Amazon Rekognition** (optional): For advanced asset analysis.
 
-### Cost ( required )
-
-This section is for a high-level cost estimate. Think of a likely straightforward scenario with reasonable assumptions based on the problem the Guidance is trying to solve. Provide an in-depth cost breakdown table in this section below ( you should use AWS Pricing Calculator to generate cost breakdown ).
-
-Start this section with the following boilerplate text:
-
-_You are responsible for the cost of the AWS services used while running this Guidance. As of <month> <year>, the cost for running this Guidance with the default settings in the <Default AWS Region (Most likely will be US East (N. Virginia)) > is approximately $<n.nn> per month for processing ( <nnnnn> records )._
-
-Replace this amount with the approximate cost for running your Guidance in the default Region. This estimate should be per month and for processing/serving resonable number of requests/entities.
-
-Suggest you keep this boilerplate text:
-_We recommend creating a [Budget](https://docs.aws.amazon.com/cost-management/latest/userguide/budgets-managing-costs.html) through [AWS Cost Explorer](https://aws.amazon.com/aws-cost-management/aws-cost-explorer/) to help manage costs. Prices are subject to change. For full details, refer to the pricing webpage for each AWS service used in this Guidance._
-
-### Sample Cost Table ( required )
-
-**Note : Once you have created a sample cost table using AWS Pricing Calculator, copy the cost breakdown to below table and upload a PDF of the cost estimation on BuilderSpace. Do not add the link to the pricing calculator in the ReadMe.**
-
-The following table provides a sample cost breakdown for deploying this Guidance with the default parameters in the US East (N. Virginia) Region for one month.
-
-| AWS service  | Dimensions | Cost [USD] |
-| ----------- | ------------ | ------------ |
-| Amazon API Gateway | 1,000,000 REST API calls per month  | $ 3.50month |
-| Amazon Cognito | 1,000 active users per month without advanced security feature | $ 0.00 |
+---
 
 ## Prerequisites (required)
 
 ### Operating System (required)
 
-- Talk about the base Operating System (OS) and environment that can be used to run or deploy this Guidance, such as *Mac, Linux, or Windows*. Include all installable packages or modules required for the deployment. 
-- By default, assume Amazon Linux 2/Amazon Linux 2023 AMI as the base environment. All packages that are not available by default in AMI must be listed out.  Include the specific version number of the package or module.
+This deployment is optimized to work best on **Amazon Linux 2**. Deployment on other operating systems may require additional steps.
 
-**Example:**
-“These deployment instructions are optimized to best work on **<Amazon Linux 2 AMI>**.  Deployment in another OS may require additional steps.”
+### Tools Required:
+- **AWS CLI**: Ensure it is installed and configured with access to your AWS account.
+- **AWS SAM CLI**: For packaging and deploying the serverless application.
+- **Node.js**: Required for developing and testing Lambda functions locally.
 
-- Include install commands for packages, if applicable.
+### AWS Account Requirements:
+- Ensure your AWS account has sufficient permissions to create and manage the following resources:
+  - Amazon S3 buckets
+  - AWS Lambda functions
+  - Amazon DynamoDB tables
+  - IAM roles
 
+> Note: No additional resources need to be created manually beyond setting up the required AWS IAM role for deployment.
 
-### Third-party tools (If applicable)
-
-*List any installable third-party tools required for deployment.*
-
-
-### AWS account requirements (If applicable)
-
-*List out pre-requisites required on the AWS account if applicable, this includes enabling AWS regions, requiring ACM certificate.*
-
-**Example:** “This deployment requires you have public ACM certificate available in your AWS account”
-
-**Example resources:**
-- ACM certificate 
-- DNS record
-- S3 bucket
-- VPC
-- IAM role with specific permissions
-- Enabling a Region or service etc.
-
-
-### aws cdk bootstrap (if sample code has aws-cdk)
-
-<If using aws-cdk, include steps for account bootstrap for new cdk users.>
-
-**Example blurb:** “This Guidance uses aws-cdk. If you are using aws-cdk for first time, please perform the below bootstrapping....”
-
-### Service limits  (if applicable)
-
-<Talk about any critical service limits that affect the regular functioning of the Guidance. If the Guidance requires service limit increase, include the service name, limit name and link to the service quotas page.>
-
-### Supported Regions (if applicable)
-
-<If the Guidance is built for specific AWS Regions, or if the services used in the Guidance do not support all Regions, please specify the Region this Guidance is best suited for>
-
+---
 
 ## Deployment Steps (required)
 
-Deployment steps must be numbered, comprehensive, and usable to customers at any level of AWS expertise. The steps must include the precise commands to run, and describe the action it performs.
+1. **Clone the Repository**:
+   Clone the repository to your local machine.
+   ```bash
+   git clone <repository-url>
+   cd guidance-for-aiml-powered-2d-3d-asset-identification-and-management
+   ```
 
-* All steps must be numbered.
-* If the step requires manual actions from the AWS console, include a screenshot if possible.
-* The steps must start with the following command to clone the repo. ```git clone xxxxxxx```
-* If applicable, provide instructions to create the Python virtual environment, and installing the packages using ```requirement.txt```.
-* If applicable, provide instructions to capture the deployed resource ARN or ID using the CLI command (recommended), or console action.
+2. **Install AWS SAM CLI**:
+   Ensure that the AWS SAM CLI is installed and functioning:
+   ```bash
+   sam --version
+   ```
 
- 
-**Example:**
+3. **Package the Application**:
+   Package the solution using the SAM CLI. This will upload your Lambda function code to an S3 bucket.
+   ```bash
+   sam package \
+       --template-file deployment/template.yaml \
+       --s3-bucket <your-deployment-bucket> \
+       --output-template-file deployment/packaged-template.yaml
+   ```
 
-1. Clone the repo using command ```git clone xxxxxxxxxx```
-2. cd to the repo folder ```cd <repo-name>```
-3. Install packages in requirements using command ```pip install requirement.txt```
-4. Edit content of **file-name** and replace **s3-bucket** with the bucket name in your account.
-5. Run this command to deploy the stack ```cdk deploy``` 
-6. Capture the domain name created by running this CLI command ```aws apigateway ............```
+4. **Deploy the Application**:
+   Deploy the solution to your AWS account using SAM CLI:
+   ```bash
+   sam deploy \
+       --template-file deployment/packaged-template.yaml \
+       --stack-name <your-stack-name> \
+       --capabilities CAPABILITY_IAM
+   ```
 
+Replace `<your-deployment-bucket>` and `<your-stack-name>` with appropriate values.
 
+---
 
-## Deployment Validation  (required)
+## Deployment Validation (required)
 
-<Provide steps to validate a successful deployment, such as terminal output, verifying that the resource is created, status of the CloudFormation template, etc.>
+### Outputs to Verify:
+- **S3 Buckets**: Ensure the specified asset storage and logging buckets are created.
+- **Lambda Functions**: Verify that the Lambda functions (e.g., `processImage`, `processObject`, `handleLabels`) are deployed.
+- **DynamoDB Table**: Confirm the presence of the metadata table in DynamoDB.
+- **CloudFormation Stack**: Check the stack status in the AWS CloudFormation console to ensure it shows `CREATE_COMPLETE`.
 
-
-**Examples:**
-
-* Open CloudFormation console and verify the status of the template with the name starting with xxxxxx.
-* If deployment is successful, you should see an active database instance with the name starting with <xxxxx> in        the RDS console.
-*  Run the following CLI command to validate the deployment: ```aws cloudformation describe xxxxxxxxxxxxx```
-
-
+---
 
 ## Running the Guidance (required)
 
-<Provide instructions to run the Guidance with the sample data or input provided, and interpret the output received.> 
+### Expected Behavior:
+Once deployed, the solution operates automatically, requiring no manual intervention:
+1. **Asset Upload**:
+   - Upload 2D or 3D assets to the designated S3 bucket.
+2. **Automated Processing**:
+   - Lambda functions will automatically process the assets, analyze their metadata, and store the results in DynamoDB.
+3. **Logging**:
+   - Logs for each operation are stored in the logging bucket and accessible via CloudWatch.
 
-This section should include:
+### Outputs:
+- **Metadata**: Extracted and stored in DynamoDB.
+- **Processed Assets**: Accessible in the S3 bucket.
 
-* Guidance inputs
-* Commands to run
-* Expected output (provide screenshot if possible)
-* Output description
+---
 
+## Cost (required)
 
+Based on the AWS Pricing Calculator, the estimated monthly cost for this solution is **$16.48**, which primarily includes:
+
+1. **Rekognition Image API Costs**:
+   - **Cost:** $16.00 per month (97% of total costs)
+   - **Reason:** 16,000 API calls for label detection. This is the dominant cost factor in the solution.
+
+2. **DynamoDB On-Demand Capacity Costs**:
+   - **Cost:** $0.26 per month (1.6% of total costs)
+   - **Reason:** 1 GB of storage with minimal read/write operations.
+
+3. **S3 Storage and Requests**:
+   - **Cost:** $0.12 per month (0.7% of total costs)
+   - **Reason:** 1 GB of storage and 20,000 PUT/COPY/POST requests.
+
+4. **Data Transfer Costs**:
+   - **Cost:** $0.10 per month (0.6% of total costs)
+   - **Reason:** 5 GB inbound and 5 GB outbound data transfer.
+
+### Observations:
+- **Rekognition Image API** is the primary cost driver. Consider reducing API calls or batching images if cost optimization is required.
+- **DynamoDB Costs** are negligible, as expected for small-scale metadata storage.
+- Overall, this solution is cost-efficient for small to medium workloads.
+
+---
 
 ## Next Steps (required)
 
-Provide suggestions and recommendations about how customers can modify the parameters and the components of the Guidance to further enhance it according to their requirements.
+- Extend the solution to include additional analysis capabilities, such as custom ML models or other AWS AI services.
+- Integrate with external content management systems (CMS) or game engines for seamless asset management.
 
+---
 
 ## Cleanup (required)
 
-- Include detailed instructions, commands, and console actions to delete the deployed Guidance.
-- If the Guidance requires manual deletion of resources, such as the content of an S3 bucket, please specify.
+To avoid incurring unnecessary costs, delete the resources when they are no longer needed:
 
+1. **Delete the CloudFormation Stack**:
+   Use the AWS CLI to delete the stack and all associated resources:
+   ```bash
+   aws cloudformation delete-stack --stack-name <your-stack-name>
+   ```
 
+2. **Empty S3 Buckets**:
+   Ensure that all S3 buckets created by the solution are emptied before deletion:
+   ```bash
+   aws s3 rm s3://<your-bucket-name> --recursive
+   ```
+
+3. **Verify Deletion**:
+   Confirm that all resources (S3 buckets, Lambda functions, DynamoDB tables) have been deleted.
+
+---
 
 ## FAQ, known issues, additional considerations, and limitations (optional)
 
+### Known Issues
+- Ensure all regions are supported by the services in this solution.
+- Verify IAM permissions to avoid deployment errors.
 
-**Known issues (optional)**
-
-<If there are common known issues, or errors that can occur during the Guidance deployment, describe the issue and resolution steps here>
-
-
-**Additional considerations (if applicable)**
-
-<Include considerations the customer must know while using the Guidance, such as anti-patterns, or billing considerations.>
-
-**Examples:**
-
-- “This Guidance creates a public AWS bucket required for the use-case.”
-- “This Guidance created an Amazon SageMaker notebook that is billed per hour irrespective of usage.”
-- “This Guidance creates unauthenticated public API endpoints.”
-
-
-Provide a link to the *GitHub issues page* for users to provide feedback.
-
-
-**Example:** *“For any feedback, questions, or suggestions, please use the issues tab under this repo.”*
-
-## Revisions (optional)
-
-Document all notable changes to this project.
-
-Consider formatting this section based on Keep a Changelog, and adhering to Semantic Versioning.
+---
 
 ## Notices (optional)
 
-Include a legal disclaimer
+Customers are responsible for making their own independent assessment of the information in this Guidance. This Guidance: (a) is for informational purposes only, (b) represents AWS current product offerings and practices, which are subject to change without notice, and (c) does not create any commitments or assurances from AWS and its affiliates, suppliers, or licensors. AWS products or services are provided “as is” without warranties, representations, or conditions of any kind, whether express or implied. AWS responsibilities and liabilities to its customers are controlled by AWS agreements, and this Guidance is not part of, nor does it modify, any agreement between AWS and its customers.
 
-**Example:**
-*Customers are responsible for making their own independent assessment of the information in this Guidance. This Guidance: (a) is for informational purposes only, (b) represents AWS current product offerings and practices, which are subject to change without notice, and (c) does not create any commitments or assurances from AWS and its affiliates, suppliers or licensors. AWS products or services are provided “as is” without warranties, representations, or conditions of any kind, whether express or implied. AWS responsibilities and liabilities to its customers are controlled by AWS agreements, and this Guidance is not part of, nor does it modify, any agreement between AWS and its customers.*
-
-
-## Authors (optional)
-
-Name of code contributors
