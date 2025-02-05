@@ -19,7 +19,7 @@
 10. [Notices](#notices-optional)
 11. [Authors](#authors-optional)
 
-## Overview (required)
+## Overview 
 
 This solution provides an automated pipeline for asset identification and management, designed specifically for game studios and traditional media industries. By leveraging AWS services, this solution allows users to process, store, and analyze both 2D and 3D assets efficiently and securely. While tailored to game studios, the solution's flexibility makes it applicable to other industries requiring robust asset management workflows.
 
@@ -38,9 +38,9 @@ The solution leverages AWS’s serverless capabilities to create a highly scalab
 
 ---
 
-## Prerequisites (required)
+## Prerequisites 
 
-### Operating System (required)
+### Operating System 
 
 This deployment is optimized to work best on **Amazon Linux 2**. Deployment on other operating systems may require additional steps.
 
@@ -60,7 +60,7 @@ This deployment is optimized to work best on **Amazon Linux 2**. Deployment on o
 
 ---
 
-## Deployment Steps (required)
+## Deployment Steps 
 
 1. **Clone the Repository**:
    Clone the repository to your local machine.
@@ -97,7 +97,7 @@ Replace `<your-deployment-bucket>` and `<your-stack-name>` with appropriate valu
 
 ---
 
-## Deployment Validation (required)
+## Deployment Validation 
 
 ### Outputs to Verify:
 - **S3 Buckets**: Ensure the specified asset storage and logging buckets are created.
@@ -107,7 +107,7 @@ Replace `<your-deployment-bucket>` and `<your-stack-name>` with appropriate valu
 
 ---
 
-## Running the Guidance (required)
+## Running the Guidance 
 
 ### Expected Behavior:
 Once deployed, the solution operates automatically, requiring no manual intervention:
@@ -124,7 +124,7 @@ Once deployed, the solution operates automatically, requiring no manual interven
 
 ---
 
-## Cost (required)
+## Cost 
 
 Based on the AWS Pricing Calculator, the estimated monthly cost for this solution is **$16.48**, which primarily includes:
 
@@ -145,14 +145,14 @@ Based on the AWS Pricing Calculator, the estimated monthly cost for this solutio
    - **Reason:** 5 GB inbound and 5 GB outbound data transfer.
 ---
 
-## Next Steps (required)
+## Next Steps 
 
 - Extend the solution to include additional analysis capabilities, such as custom ML models or other AWS AI services.
 - Integrate with external content management systems (CMS) or game engines for seamless asset management.
 
 ---
 
-## Cleanup (required)
+## Cleanup 
 
 To avoid incurring unnecessary costs, delete the resources when they are no longer needed:
 
@@ -181,7 +181,7 @@ To avoid incurring unnecessary costs, delete the resources when they are no long
 
 ---
 
-## Notices (optional)
+## Notices 
 
 Customers are responsible for making their own independent assessment of the information in this Guidance. This Guidance: (a) is for informational purposes only, (b) represents AWS current product offerings and practices, which are subject to change without notice, and (c) does not create any commitments or assurances from AWS and its affiliates, suppliers, or licensors. AWS products or services are provided “as is” without warranties, representations, or conditions of any kind, whether express or implied. AWS responsibilities and liabilities to its customers are controlled by AWS agreements, and this Guidance is not part of, nor does it modify, any agreement between AWS and its customers.
 
