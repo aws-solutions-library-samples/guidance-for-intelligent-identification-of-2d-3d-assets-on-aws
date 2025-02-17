@@ -1,6 +1,7 @@
 
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
+Description: This template creates and deploys the resources needed for the AIML-powered 2D and 3D asset identification and management (SO9411) pipeline.
 
 Parameters:
   DeploymentBucketName:
