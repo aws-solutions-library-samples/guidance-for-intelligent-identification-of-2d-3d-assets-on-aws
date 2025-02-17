@@ -28,7 +28,7 @@ This solution provides an automated pipeline for asset identification and manage
 
 ### Key Features:
 - Automated handling of asset ingestion, analysis, and metadata extraction.
-- Integration with AWS services like S3, Lambda, and DynamoDB to provide a scalable and reliable architecture.
+- Integration with AWS services like [S3](https://aws.amazon.com/s3/), [Lambda](https://aws.amazon.com/pm/lambda/), and [DynamoDB](https://aws.amazon.com/dynamodb/) to provide a scalable and reliable architecture.
 - Designed to support both 2D and 3D assets, making it versatile for different types of media.
 - Fully automated workflow after deployment, requiring no additional manual intervention.
 
@@ -145,7 +145,7 @@ Based on the [AWS Pricing Calculator](https://calculator.aws/), the estimated mo
 
 ## Next Steps 
 
-- Extend the solution to include additional analysis capabilities, such as custom ML models or other AWS AI services.
+- Extend the solution to include additional analysis capabilities, such as custom ML models or other [AWS AI services](https://aws.amazon.com/ai/generative-ai/).
 - Integrate with external content management systems (CMS) or game engines for seamless asset management.
 
 ---
