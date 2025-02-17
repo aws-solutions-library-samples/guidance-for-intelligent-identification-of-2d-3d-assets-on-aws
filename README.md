@@ -39,6 +39,8 @@ The solution leverages AWS’s serverless capabilities to create a highly scalab
 - **Amazon DynamoDB**: For storing asset metadata.
 - **Amazon Rekognition** (optional): For advanced asset analysis.
 
+![Architecture Diagram](./assets/ArchitectureDiagram.png)
+
 ---
 
 ## Prerequisites 
