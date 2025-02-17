@@ -2,22 +2,25 @@
 
 ## Table of Contents
 
-### Required
-1. [Overview](#overview-required)
-   - [Cost](#cost)
-2. [Prerequisites](#prerequisites-required)
-   - [Operating System](#operating-system-required)
-3. [Deployment Steps](#deployment-steps-required)
-4. [Deployment Validation](#deployment-validation-required)
-5. [Running the Guidance](#running-the-guidance-required)
-6. [Next Steps](#next-steps-required)
-7. [Cleanup](#cleanup-required)
-
-### Optional
-8. [FAQ, known issues, additional considerations, and limitations](#faq-known-issues-additional-considerations-and-limitations-optional)
-9. [Revisions](#revisions-optional)
-10. [Notices](#notices-optional)
-11. [Authors](#authors-optional)
+1. [Overview](#overview)
+   - [Key Features](#key-features)
+   - [Architecture Overview](#architecture-overview)
+2. [Prerequisites](#prerequisites)
+   - [Operating System](#operating-system)
+   - [Tools Required](#tools-required)
+   - [AWS Account Requirements](#aws-account-requirements)
+3. [Deployment Steps](#deployment-steps)
+4. [Deployment Validation](#deployment-validation)
+   - [Outputs to Verify](#outputs-to-verify)
+5. [Running the Guidance](#running-the-guidance)
+   - [Expected Behavior](#expected-behavior)
+   - [Outputs](#outputs)
+6. [Cost](#cost)
+7. [Next Steps](#next-steps)
+8. [Cleanup](#cleanup)
+9. [FAQ, known issues, additional considerations, and limitations](#faq-known-issues-additional-considerations-and-limitations)
+    - [Known Issues](#known-issues)
+10. [Notices](#notices)
 
 ## Overview 
 
@@ -45,9 +48,9 @@ The solution leverages AWS’s serverless capabilities to create a highly scalab
 This deployment is optimized to work best on **Amazon Linux 2**. Deployment on other operating systems may require additional steps.
 
 ### Tools Required:
-- **AWS CLI**: Ensure it is installed and configured with access to your AWS account.
-- **AWS SAM CLI**: For packaging and deploying the serverless application.
-- **Node.js**: Required for developing and testing Lambda functions locally.
+- [**AWS CLI**](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html): Ensure it is installed and configured with access to your AWS account.
+- [**AWS SAM CLI**](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/install-sam-cli.html): For packaging and deploying the serverless application.
+- [**Node.js**](https://nodejs.org/en/download): Required for developing and testing Lambda functions locally.
 
 ### AWS Account Requirements:
 - Ensure your AWS account has sufficient permissions to create and manage the following resources:
@@ -126,23 +129,16 @@ Once deployed, the solution operates automatically, requiring no manual interven
 
 ## Cost 
 
-Based on the AWS Pricing Calculator, the estimated monthly cost for this solution is **$16.48**, which primarily includes:
+Based on the [AWS Pricing Calculator](https://calculator.aws/), the estimated monthly cost for this solution is **$16.48**, which primarily includes:
 
-1. **Rekognition Image API Costs**:
-   - **Cost:** $16.00 per month (97% of total costs)
-   - **Reason:** 16,000 API calls for label detection. This is the dominant cost factor in the solution.
+| Service  | Reason | Cost |
+| ------------- | ------------- | ------------- |
+| Rekognition Image API | 16,000 API calls for label detection. This is the dominant cost factor in the solution. | $16.00 per month (97% of total costs) |
+| DynamoDB On-Demand Capacity | 1 GB of storage with minimal read/write operations. | $0.26 per month (1.6% of total costs) |
+| S3 Storage and Requests | 1 GB of storage and 20,000 PUT/COPY/POST requests. | $0.12 per month (0.7% of total costs) |
+| Data Transfer Costs | 5 GB inbound and 5 GB outbound data transfer. | $0.10 per month (0.6% of total costs) | 
+||| **$16.48** |
 
-2. **DynamoDB On-Demand Capacity Costs**:
-   - **Cost:** $0.26 per month (1.6% of total costs)
-   - **Reason:** 1 GB of storage with minimal read/write operations.
-
-3. **S3 Storage and Requests**:
-   - **Cost:** $0.12 per month (0.7% of total costs)
-   - **Reason:** 1 GB of storage and 20,000 PUT/COPY/POST requests.
-
-4. **Data Transfer Costs**:
-   - **Cost:** $0.10 per month (0.6% of total costs)
-   - **Reason:** 5 GB inbound and 5 GB outbound data transfer.
 ---
 
 ## Next Steps 
@@ -173,7 +169,7 @@ To avoid incurring unnecessary costs, delete the resources when they are no long
 
 ---
 
-## FAQ, known issues, additional considerations, and limitations (optional)
+## FAQ, known issues, additional considerations, and limitations
 
 ### Known Issues
 - Ensure all regions are supported by the services in this solution.
