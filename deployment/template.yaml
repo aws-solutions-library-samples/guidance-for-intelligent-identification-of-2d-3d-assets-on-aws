@@ -1,7 +1,5 @@
-
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
-Description: This template creates and deploys the resources needed for the AIML-powered 2D and 3D asset identification and management (SO9411) pipeline.
 
 Parameters:
   DeploymentBucketName:
@@ -17,23 +15,6 @@ Resources:
           Ref: LoggingBucket
         LogFilePrefix: access-logs/
 
-  ImageStoreBucketPolicy:
-    Type: AWS::S3::BucketPolicy
-    Properties:
-      Bucket:
-        Ref: ImageStoreBucket
-      PolicyDocument:
-        Version: '2012-10-17'
-        Statement:
-        - Effect: Deny
-          Principal: '*'
-          Action: s3:*
-          Resource:
-          - Fn::Sub: arn:aws:s3:::${ImageStoreBucket}/*
-          Condition:
-            Bool:
-              aws:SecureTransport: false
-
   LoggingBucket:
     Type: AWS::S3::Bucket
 
@@ -44,7 +25,8 @@ Resources:
         Fn::Sub: "${AWS::StackName}-deployment-bucket-${AWS::Region}-${AWS::AccountId}"
       AccessControl: Private
 
-  LambdaExecutionRole:
+  # IAM Role for processImage Lambda
+  ProcessImageExecutionRole:
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
@@ -57,7 +39,7 @@ Resources:
           Action:
           - sts:AssumeRole
       Policies:
-      - PolicyName: CustomLambdaPolicy
+      - PolicyName: ProcessImagePolicy
         PolicyDocument:
           Version: '2012-10-17'
           Statement:
@@ -69,14 +51,67 @@ Resources:
             - s3:GetObject
             - s3:PutObject
             - rekognition:DetectLabels
+            Resource:
+            - Fn::Sub: arn:aws:s3:::${ImageStoreBucket}/*
+            - Fn::Sub: arn:aws:rekognition:${AWS::Region}:${AWS::AccountId}:*
+
+  # IAM Role for processObject Lambda
+  ProcessObjectExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - lambda.amazonaws.com
+          Action:
+          - sts:AssumeRole
+      Policies:
+      - PolicyName: ProcessObjectPolicy
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+          - Effect: Allow
+            Action:
+            - logs:CreateLogGroup
+            - logs:CreateLogStream
+            - logs:PutLogEvents
+            - s3:GetObject
+            - s3:PutObject
+            Resource:
+            - Fn::Sub: arn:aws:s3:::${ImageStoreBucket}/*
+            - Fn::Sub: arn:aws:s3:::${DeploymentBucket}/*
+
+  # IAM Role for handleLabels Lambda
+  HandleLabelsExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - lambda.amazonaws.com
+          Action:
+          - sts:AssumeRole
+      Policies:
+      - PolicyName: HandleLabelsPolicy
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+          - Effect: Allow
+            Action:
+            - logs:CreateLogGroup
+            - logs:CreateLogStream
+            - logs:PutLogEvents
             - dynamodb:PutItem
             - dynamodb:UpdateItem
             - dynamodb:GetItem
             Resource:
-            - Fn::Sub: arn:aws:s3:::${ImageStoreBucket}/*
-            - Fn::Sub: arn:aws:s3:::${DeploymentBucket}/*
             - Fn::Sub: arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${AWS::StackName}-label-metadata
-            - Fn::Sub: arn:aws:rekognition:${AWS::Region}:${AWS::AccountId}:*
 
   processImage:
     Type: AWS::Serverless::Function
@@ -85,7 +120,7 @@ Resources:
       Handler: index.mjs
       Role:
         Fn::GetAtt:
-        - LambdaExecutionRole
+        - ProcessImageExecutionRole
         - Arn
       CodeUri: src/processImage
       Runtime: nodejs18.x
@@ -93,8 +128,6 @@ Resources:
         Variables:
           IMAGE_STORE_BUCKET:
             Ref: ImageStoreBucket
-          LABEL_DATA_TABLE:
-            Ref: LabelMetadataTable
       MemorySize: 128
       Timeout: 60
 
@@ -105,7 +138,7 @@ Resources:
       Handler: index.mjs
       Role:
         Fn::GetAtt:
-        - LambdaExecutionRole
+        - ProcessObjectExecutionRole
         - Arn
       CodeUri: src/processObject
       Runtime: nodejs18.x
@@ -113,8 +146,6 @@ Resources:
         Variables:
           IMAGE_STORE_BUCKET:
             Ref: ImageStoreBucket
-          LABEL_DATA_TABLE:
-            Ref: LabelMetadataTable
       MemorySize: 128
       Timeout: 60
 
@@ -125,14 +156,12 @@ Resources:
       Handler: index.mjs
       Role:
         Fn::GetAtt:
-        - LambdaExecutionRole
+        - HandleLabelsExecutionRole
         - Arn
       CodeUri: src/handleLabels
       Runtime: nodejs18.x
       Environment:
         Variables:
-          IMAGE_STORE_BUCKET:
-            Ref: ImageStoreBucket
           LABEL_DATA_TABLE:
             Ref: LabelMetadataTable
       MemorySize: 128
