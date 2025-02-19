@@ -1,0 +1,195 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Parameters:
+  DeploymentBucketName:
+    Type: String
+    Description: The name of the S3 bucket containing the deployment artifacts (e.g.,
+      Lambda function code).
+Resources:
+  ImageStoreBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      LoggingConfiguration:
+        DestinationBucketName:
+          Ref: LoggingBucket
+        LogFilePrefix: access-logs/
+    Metadata:
+      SamResourceId: ImageStoreBucket
+  ImageStoreBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket:
+        Ref: ImageStoreBucket
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Deny
+          Principal: '*'
+          Action: s3:*
+          Resource:
+          - Fn::Sub: arn:aws:s3:::${ImageStoreBucket}/*
+          Condition:
+            Bool:
+              aws:SecureTransport: false
+    Metadata:
+      SamResourceId: ImageStoreBucketPolicy
+  LoggingBucket:
+    Type: AWS::S3::Bucket
+    Metadata:
+      SamResourceId: LoggingBucket
+  DeploymentBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName:
+        Fn::Sub: ${AWS::StackName}-deployment-bucket-${AWS::Region}-${AWS::AccountId}
+      AccessControl: Private
+    Metadata:
+      SamResourceId: DeploymentBucket
+  LambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - lambda.amazonaws.com
+          Action:
+          - sts:AssumeRole
+      Policies:
+      - PolicyName: CustomLambdaPolicy
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+          - Effect: Allow
+            Action:
+            - logs:CreateLogGroup
+            - logs:CreateLogStream
+            - logs:PutLogEvents
+            - s3:GetObject
+            - s3:PutObject
+            - rekognition:DetectLabels
+            - dynamodb:PutItem
+            - dynamodb:UpdateItem
+            - dynamodb:GetItem
+            Resource:
+            - Fn::Sub: arn:aws:s3:::${ImageStoreBucket}/*
+            - Fn::Sub: arn:aws:s3:::${DeploymentBucket}/*
+            - Fn::Sub: arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${AWS::StackName}-label-metadata
+            - Fn::Sub: arn:aws:rekognition:${AWS::Region}:${AWS::AccountId}:*
+    Metadata:
+      SamResourceId: LambdaExecutionRole
+  processImage:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: processImage
+      Handler: index.mjs
+      Role:
+        Fn::GetAtt:
+        - LambdaExecutionRole
+        - Arn
+      CodeUri: s3://spxmyers21125/408abb4cbf06378965954b1e451222e3
+      Runtime: nodejs18.x
+      Environment:
+        Variables:
+          IMAGE_STORE_BUCKET:
+            Ref: ImageStoreBucket
+          LABEL_DATA_TABLE:
+            Ref: LabelMetadataTable
+      MemorySize: 128
+      Timeout: 60
+    Metadata:
+      SamResourceId: processImage
+  processObject:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: processObject
+      Handler: index.mjs
+      Role:
+        Fn::GetAtt:
+        - LambdaExecutionRole
+        - Arn
+      CodeUri: s3://spxmyers21125/67703fadf30fa40759fdac19fa9ff5f8
+      Runtime: nodejs18.x
+      Environment:
+        Variables:
+          IMAGE_STORE_BUCKET:
+            Ref: ImageStoreBucket
+          LABEL_DATA_TABLE:
+            Ref: LabelMetadataTable
+      MemorySize: 128
+      Timeout: 60
+    Metadata:
+      SamResourceId: processObject
+  handleLabels:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: handleLabels
+      Handler: index.mjs
+      Role:
+        Fn::GetAtt:
+        - LambdaExecutionRole
+        - Arn
+      CodeUri: s3://spxmyers21125/e96989627fa12ac57fd2bf84bb35bd10
+      Runtime: nodejs18.x
+      Environment:
+        Variables:
+          IMAGE_STORE_BUCKET:
+            Ref: ImageStoreBucket
+          LABEL_DATA_TABLE:
+            Ref: LabelMetadataTable
+      MemorySize: 128
+      Timeout: 60
+    Metadata:
+      SamResourceId: handleLabels
+  ProcessImageS3Permission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName:
+        Fn::GetAtt:
+        - processImage
+        - Arn
+      Action: lambda:InvokeFunction
+      Principal: s3.amazonaws.com
+      SourceArn:
+        Fn::GetAtt:
+        - ImageStoreBucket
+        - Arn
+    Metadata:
+      SamResourceId: ProcessImageS3Permission
+  LabelMetadataTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName:
+        Fn::Sub: ${AWS::StackName}-label-metadata
+      AttributeDefinitions:
+      - AttributeName: LabelId
+        AttributeType: S
+      KeySchema:
+      - AttributeName: LabelId
+        KeyType: HASH
+      BillingMode: PAY_PER_REQUEST
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+    Metadata:
+      SamResourceId: LabelMetadataTable
+Outputs:
+  ImageStoreBucketName:
+    Description: Name of the S3 bucket for image storage
+    Value:
+      Ref: ImageStoreBucket
+  DeploymentBucketName:
+    Description: Name of the dynamically created deployment bucket
+    Value:
+      Ref: DeploymentBucket
+  ProcessImageLambdaARN:
+    Description: ARN of the processImage Lambda function
+    Value:
+      Fn::GetAtt:
+      - processImage
+      - Arn
+  LabelMetadataTableName:
+    Description: Name of the Label Metadata DynamoDB table
+    Value:
+      Ref: LabelMetadataTable
