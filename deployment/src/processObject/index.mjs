@@ -3,10 +3,10 @@ import { DynamoDBDocument } from "@aws-sdk/lib-dynamodb";
 import { S3 } from "@aws-sdk/client-s3";
 
 const AWS_REGION = process.env.AWS_REGION || 'us-west-2';
-const DYNAMODB_TABLE_NAME = process.env.DYNAMODB_TABLE_NAME;
+const LABEL_DATA_TABLE = process.env.LABEL_DATA_TABLE;
 
-if (!DYNAMODB_TABLE_NAME) {
-    throw new Error("DYNAMODB_TABLE_NAME environment variable is not set.");
+if (!LABEL_DATA_TABLE) {
+    throw new Error("LABEL_DATA_TABLE environment variable is not set.");
 }
 
 const dynamodbClient = new DynamoDBClient({ region: AWS_REGION });
@@ -46,7 +46,7 @@ export const handler = async (event, context) => {
                 };
 
                 await ddbDocClient.put({
-                    TableName: DYNAMODB_TABLE_NAME,
+                    TableName: LABEL_DATA_TABLE,
                     Item: dynamodbData
                 });
 
