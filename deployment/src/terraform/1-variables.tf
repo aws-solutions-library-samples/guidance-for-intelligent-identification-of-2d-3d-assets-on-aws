@@ -66,7 +66,7 @@ data "aws_region" "current" {}
 data "aws_caller_identity" "current" {}
 
 # ┌─────────────────────────────────────────────────────────────────┐
-# │   Adding guidance solution ID via AWS CloudFormation resource	  │
+# │   Adding guidance solution ID via AWS CloudFormation resource   │
 # └─────────────────────────────────────────────────────────────────┘
 resource "aws_cloudformation_stack" "this" {
     name = "tracking-stack"

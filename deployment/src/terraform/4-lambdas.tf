@@ -73,7 +73,7 @@ resource "aws_lambda_function" "handle_labels_lambda_function" {
 }
 
 # ┌───────────────────┐
-# │   Process Image	  │
+# │   Process Image   │
 # └───────────────────┘
 
 # IAM Role for processImage Lambda function
