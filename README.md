@@ -10,6 +10,11 @@
    - [Tools Required](#tools-required)
    - [AWS Account Requirements](#aws-account-requirements)
 3. [Deployment Steps](#deployment-steps)
+   - [1. Clone the Repository](#1-clone-the-repository)
+   - [2. Verify AWS CLI](#2-verify-aws-cli)
+   - [3. Verify Terraform](#3-verify-terraform)
+   - [4. Configure Target AWS Region](#4-configure-target-aws-region)
+   - [5. Deploy The Application](#5-deploy-the-application)
 4. [Deployment Validation](#deployment-validation)
    - [Outputs to Verify](#outputs-to-verify)
 5. [Running the Guidance](#running-the-guidance)
@@ -21,6 +26,8 @@
 9. [FAQ, known issues, additional considerations, and limitations](#faq-known-issues-additional-considerations-and-limitations)
     - [Known Issues](#known-issues)
 10. [Notices](#notices)
+
+</br>
 
 ## Overview 
 
@@ -37,11 +44,11 @@ The solution leverages AWS’s serverless capabilities to create a highly scalab
 - **Amazon S3**: For asset storage and logging.
 - **AWS Lambda**: For processing assets and invoking analysis tasks.
 - **Amazon DynamoDB**: For storing asset metadata.
-- **Amazon Rekognition** (optional): For advanced asset analysis.
+- **Amazon Rekognition**: For advanced asset analysis.
 
 ![Architecture Diagram](./assets/ArchitectureDiagram.png)
 
----
+</br>
 
 ## Prerequisites 
 
@@ -51,7 +58,7 @@ This deployment is optimized to work best on **Amazon Linux 2**. Deployment on o
 
 ### Tools Required:
 - [**AWS CLI**](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html): Ensure it is installed and configured with access to your AWS account.
-- [**AWS SAM CLI**](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/install-sam-cli.html): For packaging and deploying the serverless application.
+- [**Terraform**](https://developer.hashicorp.com/terraform/install): Open-source infrastructure as code (IaC) software tool from HashiCorp to define and provision the necessary resources.
 - [**Node.js**](https://nodejs.org/en/download): Required for developing and testing Lambda functions locally.
 
 ### AWS Account Requirements:
@@ -63,54 +70,78 @@ This deployment is optimized to work best on **Amazon Linux 2**. Deployment on o
 
 > Note: No additional resources need to be created manually beyond setting up the required AWS IAM role for deployment.
 
----
+</br>
 
 ## Deployment Steps 
 
-1. **Clone the Repository**:
-   Clone the repository to your local machine.
+### **1. Clone the Repository**
+
+   Clone the repository to your local machine:
    ```bash
    git clone <repository-url>
    cd guidance-for-aiml-powered-2d-3d-asset-identification-and-management
    ```
 
-2. **Install AWS SAM CLI**:
-   Ensure that the AWS SAM CLI is installed and functioning:
+### **2. Verify AWS CLI**
+
+   Verify that AWS CLI is properly configured, and that the IAM principal returned is the one you intend to use (and has the necessary permissions to build the infrastructure):
    ```bash
-   sam --version
+   aws sts get-caller-identity
    ```
 
-3. **Package the Application**:
-   Package the solution using the SAM CLI. This will upload your Lambda function code to an S3 bucket.
+### **3. Verify Terraform**
+
+   Through your terminal window, navigate to the `deployment/src/terraform` directory in your local copy of the repo, and ensure that Terraform is installed and functioning:
    ```bash
-   sam package \
-       --template-file deployment/template.yaml \
-       --s3-bucket <your-deployment-bucket> \
-       --output-template-file deployment/packaged-template.yaml
+   terraform --version
+   ```
+   You should get a similar output confirming your installed version:
+   ```
+   Terraform v1.9.4
+   on darwin_arm6
    ```
 
-4. **Deploy the Application**:
-   Deploy the solution to your AWS account using SAM CLI:
+### **4. Configure Target AWS Region**
+
+   The following Terraform files are provided:
+
+   | Terraform File  | Purpose |
+   | ------------- | ------------- |
+   | 1-variables.tf | Defines the region, reusable values, file zipping function, and random string generation to create globally unique resource names. Can be customized to better suit your needs |
+   | 2-providers.tf | Specifies information about the plugins that allow Terraform to interact with different platforms, services, and infrastructure components |
+   | 3-s3-buckets.tf | Creates the Amazon S3 bucket to be used for asset storage |
+   | 4-lambdas.tf | Specifies the AWS Lambda functions to create, along with their roles, policies, and S3 event triggers to react to |
+   | 5-dynamodb.tf | Creates the Amazon DynamoDB table to store the generated image metadata |
+
+   Consider customizing the `1-variables.tf` file, especially the AWS region the infrastructure will be deployed to. 
+
+### **5. Deploy The Application**
+
+   Once ready and still at the `deployment/src/terraform` directory, initialize the directory: 
    ```bash
-   sam deploy \
-       --template-file deployment/packaged-template.yaml \
-       --stack-name <your-stack-name> \
-       --capabilities CAPABILITY_IAM
+   terraform init
    ```
+   This will download and install the providers used in the files. As a best practice, verify that the configuration files are syntactically valid and internally consistent:
+   ```bash
+   terraform validate
+   ```
+   When ready, apply the configuration to start creating the resources:
+   ```bash
+   terraform apply
+   ```
+   Before applying any changes or creating any resources, Terraform will print out the details of the plan and the resources it intends to create, update, and/or destroy. Confirm by typing ```yes``` when prompted, and Terraform will start to create the resources. The process should take a minute or two to finish.
 
-Replace `<your-deployment-bucket>` and `<your-stack-name>` with appropriate values.
-
----
+</br>
 
 ## Deployment Validation 
 
 ### Outputs to Verify:
-- **S3 Buckets**: Ensure the specified asset storage and logging buckets are created.
+- **Terraform**: Look for an `Apply complete!` message on your terminal window listing the resources added.
+- **S3 Bucket**: Ensure the specified asset storage bucket is created. If defaults left unchanged, the bucket name should have the form `image-store-bucket-XXXXXXXX`.
 - **Lambda Functions**: Verify that the Lambda functions (e.g., `processImage`, `processObject`, `handleLabels`) are deployed.
-- **DynamoDB Table**: Confirm the presence of the metadata table in DynamoDB.
-- **CloudFormation Stack**: Check the stack status in the AWS CloudFormation console to ensure it shows `CREATE_COMPLETE`.
+- **DynamoDB Table**: Confirm the presence of the metadata table in DynamoDB. If defaults left unchanged, the table name should have the form `LabelMetadata-XXXXXXXX`.
 
----
+</br>
 
 ## Running the Guidance 
 
@@ -121,13 +152,13 @@ Once deployed, the solution operates automatically, requiring no manual interven
 2. **Automated Processing**:
    - Lambda functions will automatically process the assets, analyze their metadata, and store the results in DynamoDB.
 3. **Logging**:
-   - Logs for each operation are stored in the logging bucket and accessible via CloudWatch.
+   - Dedicated logs for each Lambda function are accessible through CloudWatch Log groups.
 
 ### Outputs:
 - **Metadata**: Extracted and stored in DynamoDB.
 - **Processed Assets**: Accessible in the S3 bucket.
 
----
+</br>
 
 ## Cost 
 
@@ -141,35 +172,37 @@ Based on the [AWS Pricing Calculator](https://calculator.aws/), the estimated mo
 | Data Transfer Costs | 5 GB inbound and 5 GB outbound data transfer. | $0.10 per month (0.6% of total costs) | 
 ||| **$16.48** |
 
----
+</br>
 
 ## Next Steps 
 
 - Extend the solution to include additional analysis capabilities, such as custom ML models or other [AWS AI services](https://aws.amazon.com/ai/generative-ai/).
 - Integrate with external content management systems (CMS) or game engines for seamless asset management.
 
----
+</br>
 
 ## Cleanup 
 
 To avoid incurring unnecessary costs, delete the resources when they are no longer needed:
 
-1. **Delete the CloudFormation Stack**:
-   Use the AWS CLI to delete the stack and all associated resources:
+1. **Empty S3 Buckets**:
+   Ensure that the S3 bucket created by the solution is emptied before deletion:
    ```bash
-   aws cloudformation delete-stack --stack-name <your-stack-name>
+   aws s3 rm s3://image-store-bucket-XXXXXXXX --recursive
    ```
 
-2. **Empty S3 Buckets**:
-   Ensure that all S3 buckets created by the solution are emptied before deletion:
+2. **Delete Infrastructure**:
+   Use Terraform to delete all associated resources:
    ```bash
-   aws s3 rm s3://<your-bucket-name> --recursive
+   terraform destroy
    ```
+   Before destroying, terraform will ask you to confirm the action. Type `yes` to begin deleting the resources.
+
 
 3. **Verify Deletion**:
-   Confirm that all resources (S3 buckets, Lambda functions, DynamoDB tables) have been deleted.
+   Confirm that all resources (S3 bucket, Lambda functions, DynamoDB table) have been deleted.
 
----
+</br>
 
 ## FAQ, known issues, additional considerations, and limitations
 
@@ -177,9 +210,8 @@ To avoid incurring unnecessary costs, delete the resources when they are no long
 - Ensure all regions are supported by the services in this solution.
 - Verify IAM permissions to avoid deployment errors.
 
----
+</br>
 
 ## Notices 
 
 Customers are responsible for making their own independent assessment of the information in this Guidance. This Guidance: (a) is for informational purposes only, (b) represents AWS current product offerings and practices, which are subject to change without notice, and (c) does not create any commitments or assurances from AWS and its affiliates, suppliers, or licensors. AWS products or services are provided “as is” without warranties, representations, or conditions of any kind, whether express or implied. AWS responsibilities and liabilities to its customers are controlled by AWS agreements, and this Guidance is not part of, nor does it modify, any agreement between AWS and its customers.
-

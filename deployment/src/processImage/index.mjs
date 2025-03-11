@@ -9,6 +9,9 @@ export const handler = async (event) => {
     const bucketName = event.Records[0].s3.bucket.name;
     const objectKey = event.Records[0].s3.object.key;
 
+    const eventName = event.Records[0].eventName;
+    console.log(`processImage: Event received: '${eventName}':`);
+
     try {
         // Configure parameters for Rekognition
         const rekognitionParams = {
@@ -29,7 +32,7 @@ export const handler = async (event) => {
         // Prepare metadata with human-readable names
         const metadata = {};
         response.Labels.forEach(label => {
-            metadata[label.Name] = `${label.Confidence.toFixed(2)}%`;
+            metadata[label.Name.replace(/\s+/g, '-')] = `${label.Confidence.toFixed(2)}%`;
         });
 
         // Log the labels to CloudWatch
