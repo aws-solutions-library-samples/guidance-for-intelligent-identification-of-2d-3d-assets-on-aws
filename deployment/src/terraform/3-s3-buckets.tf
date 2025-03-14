@@ -12,3 +12,11 @@ resource "aws_s3_bucket_public_access_block" "image_store_public_access_block" {
   ignore_public_acls = true
   restrict_public_buckets = true
 }
+
+# Enable versioning for the bucket
+resource "aws_s3_bucket_versioning" "image_store_versioning" {
+  bucket = aws_s3_bucket.image_store_bucket.id
+  versioning_configuration {
+    status = "Enabled"
+  }
+}
