@@ -39,6 +39,12 @@ locals {
   # S3 bucket to store images to be processed
   image_store_bucket_name = "image-store-bucket-${local.random_suffix}"
 
+  # Concurrent execution limits for Lambdas
+  # Choose the limit based on expected usage to prevent the functions from consuming all available concurrent executions in your account
+  handle_labels_concurrent_exec = 50
+  process_image_concurrent_exec = 50
+  process_object_concurrent_exec = 50
+
   # DynamoDB table name
   dynamodb_table_name = "LabelMetadata-${local.random_suffix}"
 

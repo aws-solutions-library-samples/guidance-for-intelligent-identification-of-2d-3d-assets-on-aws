@@ -64,6 +64,7 @@ resource "aws_lambda_function" "handle_labels_lambda_function" {
   runtime = "nodejs18.x"
   memory_size = 128
   timeout = 60
+  reserved_concurrent_executions = local.handle_labels_concurrent_exec
 
   environment {
     variables = {
@@ -138,6 +139,7 @@ resource "aws_lambda_function" "process_image_lambda_function" {
   runtime = "nodejs18.x"
   memory_size = 128
   timeout = 60
+  reserved_concurrent_executions = local.process_image_concurrent_exec
 
   environment {
     variables = {
@@ -286,6 +288,7 @@ resource "aws_lambda_function" "process_object_lambda_function" {
   runtime = "nodejs18.x"
   memory_size = 128
   timeout = 60
+  reserved_concurrent_executions = local.process_object_concurrent_exec
 
   environment {
     variables = {
