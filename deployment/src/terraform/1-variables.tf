@@ -2,6 +2,9 @@ locals {
   # AWS region to operate in
   region = "us-east-2"
 
+  # Customize if needed
+  subnet_ids = data.aws_subnets.default.ids
+
   # Local variable containing the subdirectories containing the Lambda functions to package
   # Note that order matters as each position is processed differently in the lambdas.tf file
   subdirectories = [
@@ -48,8 +51,11 @@ locals {
   # DynamoDB table name
   dynamodb_table_name = "LabelMetadata-${local.random_suffix}"
 
-  #DynamoDB table hash key
+  # DynamoDB table hash key
   dynamodb_table_hash_key = "LabelId"
+
+  # Lambda runtime
+  lambda_runtime = "nodejs22.x"
 }
 
 # Create ZIP files for each Lambda function
@@ -70,6 +76,26 @@ resource "random_string" "bucket_suffix" {
 # Data sources to get current AWS region and account ID
 data "aws_region" "current" {}
 data "aws_caller_identity" "current" {}
+
+data "aws_vpc" "default" {
+  default = true
+}
+
+data "aws_route_tables" "selected" {
+  vpc_id = data.aws_vpc.default.id
+}
+
+data "aws_subnets" "default" {
+  filter {
+    name   = "vpc-id"
+    values = [data.aws_vpc.default.id]
+  }
+
+  filter {
+    name   = "default-for-az"
+    values = ["true"]
+  }
+}
 
 # ┌─────────────────────────────────────────────────────────────────┐
 # │   Adding guidance solution ID via AWS CloudFormation resource   │
