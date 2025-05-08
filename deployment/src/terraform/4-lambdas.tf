@@ -1,3 +1,92 @@
+# DynamoDB VPC Endpoint
+resource "aws_vpc_endpoint" "dynamodb" {
+  vpc_id = data.aws_vpc.default.id
+  service_name = "com.amazonaws.${local.region}.dynamodb"
+  vpc_endpoint_type = "Gateway"
+  route_table_ids = data.aws_route_tables.selected.ids
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid = "AllowDynamoDBAccess"
+        Effect = "Allow"
+        Principal = "*"
+        Action = ["dynamodb:PutItem"]
+        Resource = [
+          "arn:aws:dynamodb:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:table/${local.dynamodb_table_name}"
+        ]
+      }
+    ]
+  })
+
+  tags = {
+    Name = "DynamoDB VPC Endpoint"
+  }
+}
+
+# Rekognition VPC endpoint for Lambda functions
+resource "aws_vpc_endpoint" "rekognition" {
+  vpc_id = data.aws_vpc.default.id
+  service_name = "com.amazonaws.${local.region}.rekognition"
+  vpc_endpoint_type  = "Interface"
+  
+  security_group_ids = [aws_security_group.vpce_sg.id]
+  subnet_ids = data.aws_subnets.default.ids
+
+  private_dns_enabled = true
+}
+
+# Security group for the Rekognition VPC endpoint
+resource "aws_security_group" "vpce_sg" {
+  name = "rekognition-vpce-sg"
+  description = "Security group for Rekognition VPC endpoint"
+  vpc_id = data.aws_vpc.default.id
+
+  ingress {
+    from_port = 443
+    to_port = 443
+    protocol = "tcp"
+
+    # Allow access from Lambda security group
+    security_groups = [aws_security_group.lambda_sg.id] 
+  }
+}
+
+# S3 VPC endpoint for Lambda functions
+resource "aws_vpc_endpoint" "s3" {
+  vpc_id = data.aws_vpc.default.id
+  service_name = "com.amazonaws.${local.region}.s3"
+  vpc_endpoint_type = "Gateway"
+  route_table_ids = data.aws_route_tables.selected.ids
+}
+
+# Associate the S3 endpoint with the route table
+resource "aws_vpc_endpoint_route_table_association" "s3_endpoint" {
+  route_table_id  = data.aws_vpc.default.main_route_table_id
+  vpc_endpoint_id = aws_vpc_endpoint.s3.id
+}
+
+# Security group for Lambda functions
+resource "aws_security_group" "lambda_sg" {
+  name = "lambda_sg"
+  description = "Security group for Lambda functions"
+  vpc_id = data.aws_vpc.default.id
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  # Ingress rules here if needed
+
+  lifecycle {
+    create_before_destroy = true
+  }
+}
+
 # ┌───────────────────┐
 # │   Handle Labels   │
 # └───────────────────┘
@@ -37,7 +126,7 @@ resource "aws_iam_role_policy" "handle_labels_policy" {
       },
       {
         Effect = "Allow"
-        Action = ["s3:GetObject", "s3:GetObjectAttributes", "s3:GetObjectTagging"]
+        Action = ["s3:ListBucket", "s3:GetObject", "s3:GetObjectAttributes", "s3:GetObjectTagging"]
         Resource = [
           "arn:aws:s3:::${aws_s3_bucket.image_store_bucket.id}",
           "arn:aws:s3:::${aws_s3_bucket.image_store_bucket.id}/*"
@@ -54,6 +143,12 @@ resource "aws_iam_role_policy" "handle_labels_policy" {
   })
 }
 
+# Policy attachment for VPC access for handleLabels Lambda function
+resource "aws_iam_role_policy_attachment" "handle_labels_lambda_vpc_access" {
+  role = aws_iam_role.handle_labels_role.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole"
+}
+
 # Create handleLabels Lambda function
 resource "aws_lambda_function" "handle_labels_lambda_function" {
   filename = data.archive_file.lambda_zip_files[0].output_path
@@ -61,16 +156,29 @@ resource "aws_lambda_function" "handle_labels_lambda_function" {
   role = aws_iam_role.handle_labels_role.arn
   handler = "index.handler"
   source_code_hash = data.archive_file.lambda_zip_files[0].output_base64sha256
-  runtime = "nodejs18.x"
+  runtime = local.lambda_runtime
   memory_size = 128
   timeout = 60
   reserved_concurrent_executions = local.handle_labels_concurrent_exec
+
+  vpc_config {
+    subnet_ids = local.subnet_ids
+    security_group_ids = [aws_security_group.lambda_sg.id]
+  }
+
+  lifecycle {
+    create_before_destroy = true
+  }
 
   environment {
     variables = {
       LABEL_DATA_TABLE = local.dynamodb_table_name
     }
   }
+
+  depends_on = [
+    aws_vpc_endpoint.s3
+  ]
 }
 
 # ┌───────────────────┐
@@ -129,6 +237,12 @@ resource "aws_iam_role_policy" "process_image_policy" {
   })
 }
 
+# Policy attachment for VPC access for processImage Lambda function
+resource "aws_iam_role_policy_attachment" "lambda_vpc_access" {
+  role = aws_iam_role.process_image_role.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole"
+}
+
 # Create processImage Lambda function
 resource "aws_lambda_function" "process_image_lambda_function" {
   filename = data.archive_file.lambda_zip_files[1].output_path
@@ -136,16 +250,29 @@ resource "aws_lambda_function" "process_image_lambda_function" {
   role = aws_iam_role.process_image_role.arn
   handler = "index.handler"
   source_code_hash = data.archive_file.lambda_zip_files[1].output_base64sha256
-  runtime = "nodejs18.x"
+  runtime = local.lambda_runtime
   memory_size = 128
   timeout = 60
   reserved_concurrent_executions = local.process_image_concurrent_exec
+
+  vpc_config {
+    subnet_ids = local.subnet_ids
+    security_group_ids = [aws_security_group.lambda_sg.id]
+  }
+
+  lifecycle {
+    create_before_destroy = true
+  }
 
   environment {
     variables = {
       IMAGE_STORE_BUCKET = aws_s3_bucket.image_store_bucket.id
     }
   }
+
+  depends_on = [
+    aws_vpc_endpoint.s3
+  ]
 }
 
 # Lambda permission for S3 to invoke processImage function
@@ -273,9 +400,22 @@ resource "aws_iam_role_policy" "process_object_policy" {
           "arn:aws:s3:::${aws_s3_bucket.image_store_bucket.id}",
           "arn:aws:s3:::${aws_s3_bucket.image_store_bucket.id}/*"
         ]
+      },
+      {
+        Effect = "Allow"
+        Action = ["dynamodb:PutItem", "dynamodb:UpdateItem", "dynamodb:GetItem"]
+        Resource = [
+          "arn:aws:dynamodb:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:table/${local.dynamodb_table_name}"
+        ]
       }
     ]
   })
+}
+
+# Policy attachment for VPC access for processObject Lambda function
+resource "aws_iam_role_policy_attachment" "process_object_lambda_vpc_access" {
+  role = aws_iam_role.process_object_role.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole"
 }
 
 # Create processObject Lambda function
@@ -285,10 +425,19 @@ resource "aws_lambda_function" "process_object_lambda_function" {
   role = aws_iam_role.process_object_role.arn
   handler = "index.handler"
   source_code_hash = data.archive_file.lambda_zip_files[2].output_base64sha256
-  runtime = "nodejs18.x"
+  runtime = local.lambda_runtime
   memory_size = 128
   timeout = 60
   reserved_concurrent_executions = local.process_object_concurrent_exec
+
+  vpc_config {
+    subnet_ids = local.subnet_ids
+    security_group_ids = [aws_security_group.lambda_sg.id]
+  }
+
+  lifecycle {
+    create_before_destroy = true
+  }
 
   environment {
     variables = {
@@ -296,4 +445,8 @@ resource "aws_lambda_function" "process_object_lambda_function" {
       LABEL_DATA_TABLE = local.dynamodb_table_name
     }
   }
+
+  depends_on = [
+    aws_vpc_endpoint.s3
+  ]
 }

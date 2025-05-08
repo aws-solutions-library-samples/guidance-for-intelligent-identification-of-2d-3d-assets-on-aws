@@ -37,12 +37,16 @@ export const handler = async (event, context) => {
                     throw error;
                 });
 
+                // Log the metadata retrieved for the S3 object
+                console.log('S3 metadata:', metadata);
+
                 const dynamodbData = {
-                    FolderID: folderName,
-                    url: `https://${bucketName}.s3.amazonaws.com/${key}`,
-                    size: metadata.ContentLength,
-                    lastModified: metadata.LastModified.toISOString(),
-                    tags: pngTags // This will now be a map
+                    LabelId: key,
+                    FolderName: folderName,
+                    URL: `https://${bucketName}.s3.amazonaws.com/${key}`,
+                    Size: metadata.ContentLength,
+                    LastModified: metadata.LastModified.toISOString(),
+                    Tags: pngTags // This will now be a map
                 };
 
                 await ddbDocClient.put({
