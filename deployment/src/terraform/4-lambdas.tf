@@ -1,3 +1,7 @@
+# ┌───────────────┐
+# │   Endpoints   │
+# └───────────────┘
+
 # DynamoDB VPC Endpoint
 resource "aws_vpc_endpoint" "dynamodb" {
   vpc_id = data.aws_vpc.default.id
@@ -87,6 +91,54 @@ resource "aws_security_group" "lambda_sg" {
   }
 }
 
+# ┌──────────────────┐
+# │   Code Signing   │
+# └──────────────────┘
+
+# Signing Profile
+resource "aws_signer_signing_profile" "lambda_signing_profile" {
+  platform_id = "AWSLambda-SHA384-ECDSA"
+  name_prefix = "lambda_signing_profile"
+}
+
+# Signing Config
+resource "aws_lambda_code_signing_config" "lambda_code_signing" {
+  description = "Code signing configuration for Lambda functions"
+  
+  allowed_publishers {
+    #signing_profile_version_arns = [aws_signer_signing_profile.lambda_signing_profile.arn]
+    signing_profile_version_arns = [aws_signer_signing_profile.lambda_signing_profile.version_arn]
+  }
+
+  policies {
+    untrusted_artifact_on_deployment = "Enforce"
+  }
+}
+
+# Sign Lambda code
+resource "aws_signer_signing_job" "sign_lambda" {
+  count = length(local.subdirectories)
+  profile_name = aws_signer_signing_profile.lambda_signing_profile.name
+  
+  source {
+    s3 {
+      bucket = aws_s3_bucket.lambda_code_bucket.id
+      key = aws_s3_object.lambda_zip_s3_objects[count.index].key
+      version = aws_s3_object.lambda_zip_s3_objects[count.index].version_id
+    }
+  }
+  destination {
+    s3 {
+      bucket = aws_s3_bucket.lambda_code_bucket.id
+      prefix = "signed-${local.subdirectories[count.index]}-"
+    }
+  }
+
+  depends_on = [ 
+    aws_s3_object.lambda_zip_s3_objects 
+  ]
+}
+
 # ┌───────────────────┐
 # │   Handle Labels   │
 # └───────────────────┘
@@ -151,15 +203,17 @@ resource "aws_iam_role_policy_attachment" "handle_labels_lambda_vpc_access" {
 
 # Create handleLabels Lambda function
 resource "aws_lambda_function" "handle_labels_lambda_function" {
-  filename = data.archive_file.lambda_zip_files[0].output_path
   function_name = local.subdirectories[0]
   role = aws_iam_role.handle_labels_role.arn
   handler = "index.handler"
-  source_code_hash = data.archive_file.lambda_zip_files[0].output_base64sha256
   runtime = local.lambda_runtime
   memory_size = 128
   timeout = 60
   reserved_concurrent_executions = local.handle_labels_concurrent_exec
+  code_signing_config_arn = aws_lambda_code_signing_config.lambda_code_signing.arn
+
+  s3_bucket = aws_s3_bucket.lambda_code_bucket.id
+  s3_key = aws_signer_signing_job.sign_lambda[0].signed_object[0].s3[0].key
 
   vpc_config {
     subnet_ids = local.subnet_ids
@@ -177,7 +231,8 @@ resource "aws_lambda_function" "handle_labels_lambda_function" {
   }
 
   depends_on = [
-    aws_vpc_endpoint.s3
+    aws_vpc_endpoint.s3,
+    aws_signer_signing_job.sign_lambda
   ]
 }
 
@@ -245,7 +300,6 @@ resource "aws_iam_role_policy_attachment" "lambda_vpc_access" {
 
 # Create processImage Lambda function
 resource "aws_lambda_function" "process_image_lambda_function" {
-  filename = data.archive_file.lambda_zip_files[1].output_path
   function_name = local.subdirectories[1]
   role = aws_iam_role.process_image_role.arn
   handler = "index.handler"
@@ -254,6 +308,10 @@ resource "aws_lambda_function" "process_image_lambda_function" {
   memory_size = 128
   timeout = 60
   reserved_concurrent_executions = local.process_image_concurrent_exec
+  code_signing_config_arn = aws_lambda_code_signing_config.lambda_code_signing.arn
+
+  s3_bucket = aws_s3_bucket.lambda_code_bucket.id
+  s3_key = aws_signer_signing_job.sign_lambda[1].signed_object[0].s3[0].key
 
   vpc_config {
     subnet_ids = local.subnet_ids
@@ -271,13 +329,14 @@ resource "aws_lambda_function" "process_image_lambda_function" {
   }
 
   depends_on = [
-    aws_vpc_endpoint.s3
+    aws_vpc_endpoint.s3,
+    aws_signer_signing_job.sign_lambda
   ]
 }
 
 # Lambda permission for S3 to invoke processImage function
 resource "aws_lambda_permission" "process_image_s3_permission" {
-  statement_id  = "AllowS3Invoke"
+  statement_id = "AllowS3Invoke"
   action = "lambda:InvokeFunction"
   function_name = aws_lambda_function.process_image_lambda_function.arn
   principal = "s3.amazonaws.com"
@@ -420,7 +479,6 @@ resource "aws_iam_role_policy_attachment" "process_object_lambda_vpc_access" {
 
 # Create processObject Lambda function
 resource "aws_lambda_function" "process_object_lambda_function" {
-  filename = data.archive_file.lambda_zip_files[2].output_path
   function_name = local.subdirectories[2]
   role = aws_iam_role.process_object_role.arn
   handler = "index.handler"
@@ -429,6 +487,10 @@ resource "aws_lambda_function" "process_object_lambda_function" {
   memory_size = 128
   timeout = 60
   reserved_concurrent_executions = local.process_object_concurrent_exec
+  code_signing_config_arn = aws_lambda_code_signing_config.lambda_code_signing.arn
+
+  s3_bucket = aws_s3_bucket.lambda_code_bucket.id
+  s3_key = aws_signer_signing_job.sign_lambda[2].signed_object[0].s3[0].key
 
   vpc_config {
     subnet_ids = local.subnet_ids
@@ -447,6 +509,7 @@ resource "aws_lambda_function" "process_object_lambda_function" {
   }
 
   depends_on = [
-    aws_vpc_endpoint.s3
+    aws_vpc_endpoint.s3,
+    aws_signer_signing_job.sign_lambda
   ]
 }
