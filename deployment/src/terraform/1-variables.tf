@@ -42,6 +42,9 @@ locals {
   # S3 bucket to store images to be processed
   image_store_bucket_name = "image-store-bucket-${local.random_suffix}"
 
+  # S3 bucket to store signed/unsigned Lambda code
+  lambda_code_bucket_name = "lambda-code-bucket-${local.random_suffix}"
+
   # Concurrent execution limits for Lambdas
   # Choose the limit based on expected usage to prevent the functions from consuming all available concurrent executions in your account
   handle_labels_concurrent_exec = 50
